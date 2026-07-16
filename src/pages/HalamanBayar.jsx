@@ -1,55 +1,78 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { ShoppingBag, CheckCircle, Loader, ExternalLink, Clock, Zap } from 'lucide-react'
+import { ShoppingBag, CheckCircle, Loader, ExternalLink, Clock, Zap, AlertCircle, Copy } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { rupiah } from '../utils/format'
 import stellarConfig from '../config/stellar'
 import toast from 'react-hot-toast'
-
-// Data dummy untuk demo halaman bayar
-const DEMO_PAYMENTS = {
-  'pay-inv-001': {
-    jumlah: 55.00, aset: 'USDC', status: 'lunas',
-    catatan: 'Catering Toko Oleh-Oleh Merdeka',
-    merchant: { namaUsaha: 'Bakso Aci Skyni', kota: 'Bandung', provinsi: 'Jawa Barat' },
-    kadaluarsa: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-  },
-  'pay-inv-002': {
-    jumlah: 70.00, aset: 'USDC', status: 'menunggu',
-    catatan: 'Invoice Kantin Kampus Unpad',
-    merchant: { namaUsaha: 'Bakso Aci Skyni', kota: 'Bandung', provinsi: 'Jawa Barat' },
-    kadaluarsa: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString()
-  }
-}
 
 export default function HalamanBayar() {
   const { paymentId } = useParams()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [memproses, setMemproses] = useState(false)
   const [berhasil, setBerhasil] = useState(false)
   const [txHash, setTxHash] = useState('')
   const [sisaWaktu, setSisaWaktu] = useState('')
+  const [polling, setPolling] = useState(false)
 
   useEffect(() => {
-    setTimeout(() => {
-      const found = DEMO_PAYMENTS[paymentId]
-      if (found) {
-        setData(found)
-        if (found.status === 'lunas') { setBerhasil(true); setTxHash('demoTxHash' + paymentId) }
-      } else {
-        // Untuk paymentId yang dibuat saat runtime
-        setData({
-          jumlah: 10.00, aset: 'USDC', status: 'menunggu',
-          catatan: 'Pembayaran via DaganganKu',
-          merchant: { namaUsaha: 'Bakso Aci Skyni', kota: 'Bandung', provinsi: 'Jawa Barat' },
-          kadaluarsa: new Date(Date.now() + 30 * 60 * 1000).toISOString()
-        })
+    const userRaw = localStorage.getItem('dk_user')
+    const user = userRaw ? JSON.parse(userRaw) : null
+    let found = null
+
+    // 1. Cari di transaksi lokal (QR Terima Bayar)
+    const lokalRaw = localStorage.getItem('dk_transaksi_lokal')
+    const lokal = lokalRaw ? JSON.parse(lokalRaw) : []
+    const tx = lokal.find(t => t.paymentId === paymentId)
+    if (tx) {
+      found = {
+        jumlah: tx.jumlah,
+        aset: tx.aset || 'USDC',
+        catatan: tx.catatan || '',
+        status: tx.status,
+        stellarHash: tx.stellarHash || null,
+        kadaluarsa: new Date(new Date(tx.createdAt).getTime() + 30 * 60 * 1000).toISOString(),
       }
-      setLoading(false)
-    }, 800)
+    }
+
+    // 2. Kalau tidak ketemu, cari di invoice
+    if (!found) {
+      const invoiceRaw = localStorage.getItem('dk_invoice')
+      const invoices = invoiceRaw ? JSON.parse(invoiceRaw) : []
+      const inv = invoices.find(i => i.paymentId === paymentId)
+      if (inv) {
+        found = {
+          jumlah: inv.total,
+          aset: 'USDC',
+          catatan: 'Invoice ' + inv.nomorInvoice + (inv.namaPelanggan ? ' — ' + inv.namaPelanggan : ''),
+          status: inv.status === 'lunas' ? 'selesai' : 'menunggu',
+          stellarHash: null,
+          kadaluarsa: new Date(new Date(inv.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        }
+      }
+    }
+
+    if (found) {
+      setData({
+        ...found,
+        merchant: {
+          namaUsaha: user?.namaUsaha || 'Toko',
+          kota: user?.kota || '',
+          provinsi: user?.provinsi || '',
+        },
+        destination: stellarConfig.PLATFORM_PUBLIC_KEY,
+      })
+      if (found.status === 'selesai') {
+        setBerhasil(true)
+        setTxHash(found.stellarHash || '')
+      }
+    } else {
+      setData(null)
+    }
+    setLoading(false)
   }, [paymentId])
 
-  // Timer countdown
+  // Countdown timer
   useEffect(() => {
     if (!data?.kadaluarsa) return
     const interval = setInterval(() => {
@@ -62,21 +85,40 @@ export default function HalamanBayar() {
     return () => clearInterval(interval)
   }, [data])
 
-  // Simulasi proses bayar
-  async function bayar() {
-    setMemproses(true)
-    toast('Menghubungkan ke Freighter wallet...')
-    await new Promise(r => setTimeout(r, 1000))
-    toast('Membangun transaksi Stellar...')
-    await new Promise(r => setTimeout(r, 1000))
-    toast('Menunggu konfirmasi jaringan...')
-    await new Promise(r => setTimeout(r, 1500))
-    const hash = 'stellar-tx-' + Math.random().toString(36).substring(2, 18)
-    setBerhasil(true)
-    setTxHash(hash)
-    setMemproses(false)
-    toast.success('✅ Pembayaran berhasil dikonfirmasi!')
-  }
+  // Polling cek pembayaran tiap 4 detik
+  useEffect(() => {
+    if (!data || berhasil || data.status === 'selesai') return
+    setPolling(true)
+    const interval = setInterval(async () => {
+      try {
+        const pubKey = stellarConfig.PLATFORM_PUBLIC_KEY
+        if (!pubKey) return
+        const memo = paymentId.slice(0, 28)
+        const res = await fetch(`${stellarConfig.HORIZON_URL}/accounts/${pubKey}/payments?limit=10&order=desc`)
+        const json = await res.json()
+        const records = json._embedded?.records || []
+        for (const r of records) {
+          if (r.memo === memo || r.transaction_memo === memo) {
+            // Update localStorage
+            const lokalRaw = localStorage.getItem('dk_transaksi_lokal')
+            const lokal = lokalRaw ? JSON.parse(lokalRaw) : []
+            const idx = lokal.findIndex(t => t.paymentId === paymentId)
+            if (idx !== -1) {
+              lokal[idx] = { ...lokal[idx], status: 'selesai', stellarHash: r.transaction_hash }
+              localStorage.setItem('dk_transaksi_lokal', JSON.stringify(lokal))
+            }
+            setTxHash(r.transaction_hash)
+            setBerhasil(true)
+            setPolling(false)
+            clearInterval(interval)
+            toast.success('Pembayaran berhasil dikonfirmasi!')
+            return
+          }
+        }
+      } catch { /* tetap polling */ }
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [data, berhasil, paymentId])
 
   if (loading) {
     return (
@@ -86,13 +128,32 @@ export default function HalamanBayar() {
     )
   }
 
-  const estimasiIDR = rupiah(data.jumlah * (stellarConfig.KURS[data.aset] || 16000))
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full">
+          <AlertCircle size={40} className="text-red-400 mx-auto mb-3" />
+          <h2 className="font-bold text-slate-800 text-lg mb-2">Link tidak ditemukan</h2>
+          <p className="text-slate-500 text-sm">Link pembayaran ini tidak valid atau sudah kedaluwarsa.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const kursAset = data.aset === 'XLM' ? stellarConfig.KURS.XLM : stellarConfig.KURS.USDC
+  const estimasiIDR = rupiah(data.jumlah * kursAset)
+
+  // Build SEP-0007 deep link untuk buka Freighter / LOBSTR
+  const memo = paymentId.slice(0, 28)
+  const assetParam = data.aset === 'XLM'
+    ? ''
+    : `&asset_code=USDC&asset_issuer=${stellarConfig.USDC_ISSUER}`
+  const sep7Link = `web+stellar:pay?destination=${data.destination}&amount=${parseFloat(data.jumlah).toFixed(7)}&memo=${memo}&memo_type=text${assetParam}`
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-indigo-900 flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-4">
 
-        {/* Logo */}
         <div className="text-center">
           <div className="inline-flex items-center gap-2 mb-1">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -107,36 +168,39 @@ export default function HalamanBayar() {
           {/* Header merchant */}
           <div className="bg-gradient-to-r from-purple-800 to-indigo-700 p-5 text-center">
             <div className="w-12 h-12 rounded-full bg-white/20 text-white font-bold text-xl flex items-center justify-center mx-auto mb-2">
-              {data.merchant?.namaUsaha?.[0]?.toUpperCase()}
+              {data.merchant.namaUsaha?.[0]?.toUpperCase()}
             </div>
-            <p className="text-white font-bold text-lg">{data.merchant?.namaUsaha}</p>
-            <p className="text-purple-200 text-sm">{data.merchant?.kota}, {data.merchant?.provinsi}</p>
+            <p className="text-white font-bold text-lg">{data.merchant.namaUsaha}</p>
+            {data.merchant.kota && (
+              <p className="text-purple-200 text-sm">{data.merchant.kota}{data.merchant.provinsi ? `, ${data.merchant.provinsi}` : ''}</p>
+            )}
           </div>
 
           <div className="p-6">
             {berhasil ? (
-              /* Sukses */
               <div className="text-center py-4">
                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
                   <CheckCircle size={36} className="text-green-500" />
                 </div>
                 <h3 className="text-xl font-extrabold text-slate-900 mb-2">Pembayaran Berhasil! 🎉</h3>
                 <p className="text-slate-500 text-sm mb-5">
-                  {data.jumlah} {data.aset} telah dikirim ke {data.merchant?.namaUsaha}
+                  {data.jumlah} {data.aset} telah dikirim ke {data.merchant.namaUsaha}
                 </p>
-                <div className="bg-slate-50 rounded-xl p-3 text-left mb-4">
-                  <p className="text-xs text-slate-500 mb-1">Transaction Hash</p>
-                  <code className="text-xs font-mono text-slate-700 break-all leading-relaxed">{txHash}</code>
-                </div>
-                <a href={stellarConfig.explorerTx(txHash)} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-purple-600 text-sm font-medium hover:underline">
-                  Lihat di Stellar Explorer <ExternalLink size={13} />
-                </a>
+                {txHash && (
+                  <>
+                    <div className="bg-slate-50 rounded-xl p-3 text-left mb-4">
+                      <p className="text-xs text-slate-500 mb-1">Transaction Hash</p>
+                      <code className="text-xs font-mono text-slate-700 break-all leading-relaxed">{txHash}</code>
+                    </div>
+                    <a href={stellarConfig.explorerTx(txHash)} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-purple-600 text-sm font-medium hover:underline">
+                      Lihat di Stellar Explorer <ExternalLink size={13} />
+                    </a>
+                  </>
+                )}
               </div>
             ) : (
-              /* Form bayar */
               <div className="space-y-4">
-                {/* Jumlah */}
                 <div className="text-center bg-slate-50 rounded-xl p-4">
                   <p className="text-slate-500 text-sm mb-1">Jumlah Pembayaran</p>
                   <p className="text-4xl font-extrabold text-slate-900">{data.jumlah}</p>
@@ -149,7 +213,6 @@ export default function HalamanBayar() {
                   )}
                 </div>
 
-                {/* Timer */}
                 {sisaWaktu && sisaWaktu !== 'Kadaluarsa' && (
                   <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 rounded-xl p-2.5">
                     <Clock size={15} />
@@ -162,28 +225,37 @@ export default function HalamanBayar() {
                   </div>
                 )}
 
-                {/* Banner demo */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                  <p className="text-blue-700 text-xs font-semibold mb-1">🎮 Mode Demo</p>
-                  <p className="text-blue-600 text-xs">
-                    Di produksi, klik tombol ini akan membuka Freighter wallet untuk tanda tangan transaksi Stellar.
-                  </p>
+                {polling && (
+                  <div className="flex items-center justify-center gap-2 text-purple-600 bg-purple-50 rounded-xl p-2.5">
+                    <Loader size={14} className="animate-spin" />
+                    <span className="text-xs">Menunggu konfirmasi pembayaran...</span>
+                  </div>
+                )}
+
+                {/* QR Code SEP-0007 — scan pakai Freighter/LOBSTR di HP */}
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-xs text-slate-500 font-medium">Scan QR dengan Freighter / LOBSTR di HP</p>
+                  <div className="bg-white border-2 border-purple-200 rounded-2xl p-3 inline-block">
+                    <QRCodeSVG value={sep7Link} size={180} bgColor="#ffffff" fgColor="#1e1b4b" level="M" />
+                  </div>
+                  <p className="text-xs text-slate-400">atau buka di wallet yang sudah install di browser</p>
                 </div>
 
-                {/* Tombol bayar */}
-                <button onClick={bayar}
-                  disabled={memproses || sisaWaktu === 'Kadaluarsa' || data.status === 'lunas'}
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-base">
-                  {memproses
-                    ? <><Loader size={18} className="animate-spin" /> Memproses di Stellar...</>
-                    : data.status === 'lunas'
-                    ? '✅ Sudah Dibayar'
-                    : <><Zap size={18} /> Bayar {data.jumlah} {data.aset}</>
-                  }
+                {/* Tombol buka wallet langsung (untuk mobile) */}
+                <a href={sep7Link}
+                  className={`w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 text-sm ${sisaWaktu === 'Kadaluarsa' ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <Zap size={16} /> Buka di Wallet ({data.jumlah} {data.aset})
+                </a>
+
+                {/* Copy link */}
+                <button
+                  onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link disalin!') }}
+                  className="w-full border border-slate-200 text-slate-600 font-medium py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
+                  <Copy size={14} /> Salin Link Pembayaran
                 </button>
 
                 <p className="text-center text-xs text-slate-400">
-                  Transaksi diproses di jaringan Stellar · konfirmasi ~3-5 detik
+                  Konfirmasi otomatis ~3-5 detik setelah pembayaran terkirim
                 </p>
               </div>
             )}
