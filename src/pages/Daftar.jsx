@@ -11,7 +11,7 @@ export default function Daftar() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     nama: '', email: '', password: '', noHp: '',
-    namaUsaha: '', jenisUsaha: 'Makanan & Minuman', kota: '', provinsi: ''
+    namaUsaha: '', jenisUsaha: 'Makanan & Minuman', kota: '', provinsi: '',
   })
 
   const ubah = (k, v) => setForm(p => ({ ...p, [k]: v }))
@@ -23,7 +23,7 @@ export default function Daftar() {
     try {
       const res = await daftar(form)
       simpanLogin(res.token, res.user)
-      toast.success('Berhasil daftar! Wallet Stellar sudah siap 🚀')
+      toast.success('Akun berhasil dibuat! 🚀')
       navigate('/dashboard')
     } catch (err) {
       toast.error(err.message || 'Gagal mendaftar')
@@ -43,7 +43,7 @@ export default function Daftar() {
             <span className="text-white font-bold text-xl">DaganganKu</span>
           </Link>
           <h1 className="text-white font-bold text-2xl">Daftar Gratis</h1>
-          <p className="text-purple-200 text-sm mt-1">Wallet Stellar dibuat otomatis</p>
+          <p className="text-purple-200 text-sm mt-1">Mulai terima pembayaran digital</p>
         </div>
 
         {/* Indikator langkah */}
@@ -69,12 +69,12 @@ export default function Daftar() {
               <>
                 <div>
                   <label className="label">Nama Lengkap</label>
-                  <input className="input" placeholder="Agung Pratama"
+                  <input className="input" placeholder="Nama kamu"
                     value={form.nama} onChange={e => ubah('nama', e.target.value)} required />
                 </div>
                 <div>
                   <label className="label">Email</label>
-                  <input type="email" className="input" placeholder="agung@email.com"
+                  <input type="email" className="input" placeholder="email@kamu.com"
                     value={form.email} onChange={e => ubah('email', e.target.value)} required />
                 </div>
                 <div>
@@ -94,7 +94,7 @@ export default function Daftar() {
               <>
                 <div>
                   <label className="label">Nama Usaha</label>
-                  <input className="input" placeholder="Bakso Aci Skyni"
+                  <input className="input" placeholder="Nama toko / brand kamu"
                     value={form.namaUsaha} onChange={e => ubah('namaUsaha', e.target.value)} required />
                 </div>
                 <div>
@@ -121,10 +121,10 @@ export default function Daftar() {
                       value={form.provinsi} onChange={e => ubah('provinsi', e.target.value)} required />
                   </div>
                 </div>
-                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 flex items-start gap-2">
-                  <CheckCircle size={15} className="text-purple-600 flex-shrink-0 mt-0.5" />
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-3 flex items-start gap-2">
+                  <CheckCircle size={15} className="text-purple-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-purple-700">
-                    Wallet Stellar akan otomatis dibuat dan diisi XLM gratis via Friendbot testnet.
+                    Wallet pembayaran digital sudah disiapkan otomatis. Kamu bisa langsung terima pembayaran setelah daftar.
                   </p>
                 </div>
               </>
@@ -139,7 +139,7 @@ export default function Daftar() {
               <button type="submit" className="btn-primary flex-1" disabled={loading}>
                 {loading
                   ? <><Loader size={16} className="animate-spin" /> Membuat akun...</>
-                  : langkah === 1 ? 'Lanjut →' : 'Daftar & Buat Wallet'
+                  : langkah === 1 ? 'Lanjut →' : 'Daftar Sekarang'
                 }
               </button>
             </div>
