@@ -1,22 +1,21 @@
+cat > /mnt/user-data/outputs/DaganganKu/README.md << 'ENDOFFILE'
 # 🛒 DaganganKu
 
-**A Stellar blockchain-powered business management platform for small merchants** — accept crypto payments, manage products, generate invoices, and create promotional content with AI. Built specifically for Indonesian micro, small, and medium enterprises (MSMEs) looking to go digital without the complexity.
-
-> Demo data is based on a fictional business called "Bakso Aci Skyni" (a meatball snack brand from Bandung, Indonesia) as a realistic usage example.
+**Platform manajemen bisnis berbasis blockchain Stellar untuk pedagang kecil** — terima pembayaran crypto, kelola produk, buat invoice digital, dan generate konten promosi dengan AI. Dibangun khusus untuk UMKM Indonesia yang ingin go digital tanpa kerumitan teknis.
 
 ---
 
-## ✨ Features
+## ✨ Fitur
 
-| Feature | Description |
+| Fitur | Deskripsi |
 |---|---|
-| 💰 **Receive Payments** | Generate QR code payments via USDC/XLM on the Stellar network |
-| 📦 **Product Management** | Add, edit, and delete products with dual pricing (IDR + crypto) |
-| 🧾 **Digital Invoices** | Create and send professional invoices with real-time payment status |
-| 👛 **Stellar Wallet** | Monitor USDC & XLM balances with estimated IDR conversion |
-| 📊 **Analytics Dashboard** | Monthly revenue charts, transaction statistics, and business summary |
-| ✨ **AI Content Generator** | Generate promotional captions for Instagram, TikTok, WhatsApp, and more |
-| 🔗 **Blockchain Verification** | Every transaction is verifiable directly on the Stellar blockchain explorer |
+| 💰 **Terima Pembayaran** | Generate QR code pembayaran USDC/XLM via jaringan Stellar (SEP-0007) |
+| 📦 **Manajemen Produk** | Tambah, edit, dan hapus produk dengan harga ganda (IDR + crypto) |
+| 🧾 **Invoice Digital** | Buat dan kirim invoice profesional dengan status pembayaran real-time |
+| 👛 **Stellar Wallet** | Pantau saldo USDC & XLM langsung dari Horizon API dengan estimasi IDR |
+| 📊 **Dashboard Analitik** | Grafik pendapatan, statistik transaksi, dan ringkasan bisnis |
+| ✨ **AI Konten Generator** | Generate caption promosi untuk Instagram, TikTok, WhatsApp, dan lainnya |
+| 🔗 **Verifikasi Blockchain** | Setiap transaksi bisa diverifikasi langsung di Stellar Explorer |
 
 ---
 
@@ -30,58 +29,53 @@
 - **Icons:** Lucide React
 - **Notifications:** react-hot-toast
 - **Blockchain:** Stellar Network (Testnet/Mainnet) via Horizon API
-- **AI:** Claude API (Anthropic) — powers the AI Content Generator
-- **Deployment:** Netlify (pre-configured)
+- **AI:** Kimi K2 (via Dahl inference) — untuk AI Konten Generator
+- **Deployment:** Netlify (sudah dikonfigurasi)
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Cara Memulai
 
-### Prerequisites
+### Prasyarat
 
 - Node.js v18+
-- npm or yarn
-- A Stellar account — create one at [Stellar Laboratory](https://laboratory.stellar.org)
+- npm atau yarn
+- Akun Stellar — buat di [Freighter Wallet](https://www.freighter.app)
+- Untuk testnet: fund akun via [Friendbot](https://friendbot.stellar.org)
 
-### Installation
+### Instalasi
 
 ```bash
-# Clone the repository
 git clone https://github.com/username/daganganku.git
 cd daganganku
-
-# Install dependencies
 npm install
 ```
 
-### Configuration
+### Konfigurasi
 
-**1. Stellar Wallet** — open `src/config/stellar.js` and fill in your public key:
-
-```js
-const stellarConfig = {
-  PLATFORM_PUBLIC_KEY: 'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-  NETWORK: 'testnet', // change to 'mainnet' for production
-  HORIZON_URL: 'https://horizon-testnet.stellar.org',
-  // ...
-}
-```
-
-**2. Claude API Key** (required for AI Content Generator) — create a `.env` file in the project root:
+Buat file `.env` di root project:
 
 ```env
-VITE_ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxx
+VITE_STELLAR_PUBLIC_KEY=GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+VITE_STELLAR_NETWORK=testnet
+VITE_HORIZON_URL=https://horizon-testnet.stellar.org
+VITE_USDC_ISSUER=GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
+VITE_DAHL_API_KEY=dahl_xxxxxxxxxxxxxxxxxxxxxxxx
+VITE_KURS_USDC=16000
+VITE_KURS_XLM=3200
 ```
 
-### Run Development Server
+> Untuk mainnet, ganti `VITE_STELLAR_NETWORK=mainnet`, `VITE_HORIZON_URL=https://horizon.stellar.org`, dan `VITE_USDC_ISSUER=GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN`
+
+### Jalankan Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Buka [http://localhost:5173](http://localhost:5173) di browser.
 
-### Build for Production
+### Build untuk Produksi
 
 ```bash
 npm run build
@@ -89,104 +83,92 @@ npm run build
 
 ---
 
-## 📁 Project Structure
+## 📁 Struktur Project
 
 ```
 daganganku/
 ├── src/
 │   ├── pages/
-│   │   ├── Landing.jsx          # Public landing page
-│   │   ├── Login.jsx            # User login
-│   │   ├── Daftar.jsx           # User registration
-│   │   ├── Dashboard.jsx        # Business overview & analytics
-│   │   ├── TerimaYaraman.jsx    # Stellar QR payment generator
-│   │   ├── Transaksi.jsx        # Transaction history
-│   │   ├── Produk.jsx           # Product CRUD management
-│   │   ├── Invoice.jsx          # Invoice list
-│   │   ├── BuatInvoice.jsx      # Create new invoice
-│   │   ├── Wallet.jsx           # Stellar wallet info & balance
-│   │   ├── AIKonten.jsx         # AI promotional content generator
-│   │   ├── HalamanBayar.jsx     # Public payment confirmation page
-│   │   └── Pengaturan.jsx       # Account & business settings
+│   │   ├── Landing.jsx          # Landing page publik
+│   │   ├── Login.jsx            # Login pengguna
+│   │   ├── Daftar.jsx           # Registrasi pengguna
+│   │   ├── Dashboard.jsx        # Ringkasan bisnis & analitik
+│   │   ├── TerimaYaraman.jsx    # Generator QR pembayaran Stellar
+│   │   ├── Transaksi.jsx        # Riwayat transaksi
+│   │   ├── Produk.jsx           # Manajemen produk
+│   │   ├── Invoice.jsx          # Daftar invoice
+│   │   ├── BuatInvoice.jsx      # Buat invoice baru
+│   │   ├── Wallet.jsx           # Info & saldo wallet Stellar
+│   │   ├── AIKonten.jsx         # Generator konten promosi AI
+│   │   ├── HalamanBayar.jsx     # Halaman pembayaran publik (QR + polling)
+│   │   └── Pengaturan.jsx       # Pengaturan akun & bisnis
 │   ├── components/
-│   │   └── layout/              # Main layout & navigation
+│   │   └── layout/              # Layout utama & navigasi
 │   ├── config/
-│   │   └── stellar.js           # Stellar network configuration
+│   │   └── stellar.js           # Konfigurasi jaringan Stellar (baca dari .env)
 │   ├── mock/
-│   │   ├── api.js               # Simulated API (replace with real backend)
-│   │   └── data.js              # Dummy data for development
+│   │   └── api.js               # API layer: Horizon + localStorage + Kimi AI
 │   ├── utils/
-│   │   ├── auth.js              # Authentication helpers (localStorage)
-│   │   └── format.js            # Currency, date, and status formatters
-│   ├── App.jsx                  # Root router
-│   ├── main.jsx                 # Entry point
-│   └── index.css                # Global styles + Tailwind
-├── netlify.toml                 # Netlify deployment config
+│   │   ├── auth.js              # Helper autentikasi (localStorage)
+│   │   └── format.js            # Format mata uang, tanggal, dan status
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+├── .env.example                 # Template environment variables
+├── netlify.toml
 ├── vite.config.js
-├── tailwind.config.js
 └── package.json
 ```
 
 ---
 
-## 🌐 Deploy to Netlify
+## 🌐 Deploy ke Netlify
 
-This project is ready to deploy on Netlify. The `netlify.toml` file already handles SPA redirect routing.
-
-**Steps:**
-
-1. Push the repo to GitHub
-2. Go to [netlify.com](https://netlify.com) → "Add new site" → select your repo
+1. Push repo ke GitHub (pastikan `.env` tidak ikut — sudah ada di `.gitignore`)
+2. Buka [netlify.com](https://netlify.com) → "Add new site" → pilih repo
 3. Build command: `npm run build`
 4. Publish directory: `dist`
-5. Add the `VITE_ANTHROPIC_API_KEY` environment variable in the Netlify dashboard
+5. Tambahkan semua variabel dari `.env` di Netlify dashboard → Site configuration → Environment variables
 
 ---
 
-## ⚠️ Important Notes
+## 💳 Cara Kerja Pembayaran
 
-- **Mock data only** — there is no real backend. All data is stored in `localStorage` and will be cleared if the browser cache is wiped.
-- **Stellar Testnet** is used by default. For production, switch `NETWORK` to `mainnet` and update `HORIZON_URL` accordingly.
-- **Never commit your API key** to a public repository. Always use `.env` and make sure `.env` is listed in `.gitignore`.
-- The "Simulate Payment" feature is for demo/development purposes only and does not create real blockchain transactions.
-- The Claude API key is currently called from the frontend (`import.meta.env`), which exposes it in the browser. For production use, route API calls through a backend or serverless function instead.
+1. Penjual buat QR di menu **Terima Pembayaran** atau kirim **Invoice**
+2. Pembeli scan QR dengan **Freighter** atau **LOBSTR** di HP
+3. Wallet pembeli langsung terbuka dengan jumlah & tujuan terisi otomatis (format SEP-0007)
+4. Pembeli konfirmasi → transaksi broadcast ke Stellar network
+5. Halaman penjual otomatis update jadi **"Pembayaran Berhasil"** dalam 3-5 detik
+
+---
+
+## ⚠️ Catatan Penting
+
+- **Tidak ada backend** — semua data (produk, invoice, konten) tersimpan di `localStorage`. Data akan hilang jika cache browser dihapus.
+- **Saldo & transaksi** diambil langsung dari Stellar Horizon API (data blockchain nyata).
+- **Jangan commit file `.env`** ke repository publik. Selalu gunakan environment variables.
+- **Satu wallet untuk semua** — model ini cocok untuk satu toko/operator. Untuk multi-user, perlu backend tambahan.
+- **API key Kimi AI** dipanggil dari frontend. Untuk produksi skala besar, route melalui backend/serverless function.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Real backend integration (Express/Hono + database)
-- [ ] Real-time payment notifications via Stellar event stream
-- [ ] Export reports to PDF/Excel
-- [ ] Multi-user / team support
-- [ ] Marketplace integrations (Tokopedia, Shopee)
-- [ ] KYC verification for mainnet deployment
+- [ ] Backend nyata (Express/Hono + database)
+- [ ] Notifikasi pembayaran real-time via Stellar event stream
+- [ ] Export laporan ke PDF/Excel
+- [ ] Multi-user / tim support
+- [ ] Integrasi marketplace (Tokopedia, Shopee)
+- [ ] Verifikasi KYC untuk deployment mainnet
 
 ---
 
-## 🤝 Contributing
+## 📄 Lisensi
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
-
-```bash
-# Fork → clone → create a new branch
-git checkout -b feature/your-feature-name
-
-# Commit your changes
-git commit -m "feat: add some feature"
-
-# Push and open a Pull Request
-git push origin feature/your-feature-name
-```
-
----
-
-## 📄 License
-
-MIT License — free to use, modify, and distribute.
+MIT License — bebas digunakan, dimodifikasi, dan didistribusikan.
 
 ---
 
 <div align="center">
-  Built with ❤️ for Indonesian small businesses
+  Dibangun dengan ❤️ untuk UMKM Indonesia
 </div>
