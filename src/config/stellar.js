@@ -1,33 +1,51 @@
 // src/config/stellar.js
 // ============================================================
-// KONFIGURASI STELLAR - ISI DI SINI
+// KONFIGURASI STELLAR — Semua nilai diambil dari .env
+// Salin .env.example → .env lalu isi nilainya
 // ============================================================
 
+const network  = import.meta.env.VITE_STELLAR_NETWORK  || 'testnet'
+const isMainnet = network === 'mainnet'
+
 const stellarConfig = {
-  // Ganti dengan public key Stellar kamu
-  // Contoh: 'GBVTJKSDM5YKCXKZQFYQTXHFBZUVUEJCMVKBRGR7G5DFHFYG4NRPKJ5'
-  PLATFORM_PUBLIC_KEY: 'GCUEONV3IBASFHDQIFNEPUQUT6WT5YCG7MQUIHLWI4KXTQSSTOLJ2L7E',
+  // Public key pemilik toko — wajib diisi di .env
+  PLATFORM_PUBLIC_KEY: import.meta.env.VITE_STELLAR_PUBLIC_KEY || '',
 
-  // Network: 'testnet' untuk demo, 'mainnet' untuk produksi
-  NETWORK: 'testnet',
+  // Network
+  NETWORK: network,
 
-  // URL Horizon
-  HORIZON_URL: 'https://horizon-testnet.stellar.org',
+  // Horizon endpoint
+  HORIZON_URL: import.meta.env.VITE_HORIZON_URL ||
+    (isMainnet
+      ? 'https://horizon.stellar.org'
+      : 'https://horizon-testnet.stellar.org'),
 
-  // USDC issuer di testnet
-  USDC_ISSUER: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
+  // USDC issuer
+  // Testnet  : GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5
+  // Mainnet  : GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN
+  USDC_ISSUER: import.meta.env.VITE_USDC_ISSUER || (
+    isMainnet
+      ? 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN'
+      : 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5'
+  ),
 
-  // Kurs estimasi (di produksi pakai price oracle)
+  // Kurs estimasi IDR — diisi dari .env atau fallback default
+  // Di produksi, komponen Wallet akan fetch kurs real-time dari Stellar DEX
   KURS: {
-    USDC: 16000,  // 1 USDC ≈ Rp 16.000
-    XLM:   3200,  // 1 XLM  ≈ Rp 3.200
+    USDC: parseInt(import.meta.env.VITE_KURS_USDC || '16000'),
+    XLM:  parseInt(import.meta.env.VITE_KURS_XLM  || '3200'),
   },
 
-  // Explorer URL
+  // Explorer URL (otomatis sesuai network)
   explorerTx: (hash) =>
-    `https://stellar.expert/explorer/testnet/tx/${hash}`,
+    isMainnet
+      ? `https://stellar.expert/explorer/public/tx/${hash}`
+      : `https://stellar.expert/explorer/testnet/tx/${hash}`,
+
   explorerAccount: (address) =>
-    `https://stellar.expert/explorer/testnet/account/${address}`,
+    isMainnet
+      ? `https://stellar.expert/explorer/public/account/${address}`
+      : `https://stellar.expert/explorer/testnet/account/${address}`,
 }
 
 export default stellarConfig
