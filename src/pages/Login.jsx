@@ -1,4 +1,3 @@
-// src/pages/Login.jsx
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingBag, Eye, EyeOff } from 'lucide-react'
@@ -8,8 +7,8 @@ import toast from 'react-hot-toast'
 
 export default function Login() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('agung@daganganku.id')
-  const [password, setPassword] = useState('password123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [lihat, setLihat] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -39,24 +38,22 @@ export default function Login() {
             <span className="text-white font-bold text-2xl">DaganganKu</span>
           </Link>
           <h1 className="text-white font-bold text-2xl">Masuk ke Akun</h1>
-          <p className="text-purple-200 text-sm mt-1">Kelola usaha dan konten kamu</p>
-        </div>
-
-        <div className="bg-amber-400/15 border border-amber-400/30 rounded-xl p-3 mb-4 text-center">
-          <p className="text-amber-200 text-sm">🎮 Demo — email & password sudah terisi, langsung klik Masuk</p>
+          <p className="text-purple-200 text-sm mt-1">Kelola usaha dan terima pembayaran</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl p-7">
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="label">Email</label>
-              <input type="email" className="input" value={email} onChange={e => setEmail(e.target.value)} required />
+              <input type="email" className="input" placeholder="email@kamu.com"
+                value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div>
               <label className="label">Password</label>
               <div className="relative">
                 <input type={lihat ? 'text' : 'password'} className="input pr-11"
-                  value={password} onChange={e => setPassword(e.target.value)} required />
+                  placeholder="Password kamu" value={password}
+                  onChange={e => setPassword(e.target.value)} required />
                 <button type="button" onClick={() => setLihat(!lihat)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                   {lihat ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -67,8 +64,10 @@ export default function Login() {
               {loading ? 'Masuk...' : 'Masuk'}
             </button>
           </form>
+
           <p className="text-center text-sm text-slate-500 mt-5">
-            Belum punya akun? <Link to="/daftar" className="text-purple-600 font-semibold hover:underline">Daftar gratis</Link>
+            Belum punya akun?{' '}
+            <Link to="/daftar" className="text-purple-600 font-semibold hover:underline">Daftar gratis</Link>
           </p>
         </div>
       </div>
