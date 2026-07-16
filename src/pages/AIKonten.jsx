@@ -25,8 +25,8 @@ export default function AIKonten() {
     judul: '',
   })
 
-  const belumAdaApiKey = !import.meta.env.VITE_ANTHROPIC_API_KEY ||
-    import.meta.env.VITE_ANTHROPIC_API_KEY === 'isi_api_key_claude_disini'
+  const belumAdaApiKey = !import.meta.env.VITE_DAHL_API_KEY ||
+    import.meta.env.VITE_DAHL_API_KEY === 'ISI_DAHL_API_KEY_DISINI'
 
   useEffect(() => { load() }, [])
   async function load() { setKontenList(await getKonten()); setLoading(false) }
@@ -78,7 +78,7 @@ export default function AIKonten() {
           <div>
             <p className="font-semibold text-blue-800 text-sm">Mode Demo — Template Statis</p>
             <p className="text-blue-700 text-xs mt-1">
-              Untuk AI sungguhan, tambahkan <code className="bg-blue-100 px-1 rounded">VITE_ANTHROPIC_API_KEY</code> di
+              Untuk AI sungguhan, tambahkan <code className="bg-blue-100 px-1 rounded">VITE_DAHL_API_KEY</code> di
               file <code className="bg-blue-100 px-1 rounded">.env</code>.
               Sekarang menggunakan template konten yang sudah didesain untuk UMKM.
             </p>
@@ -88,8 +88,8 @@ export default function AIKonten() {
         <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-start gap-3">
           <CheckCircle size={18} className="text-green-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-green-800 text-sm">Claude AI Terhubung ✅</p>
-            <p className="text-green-700 text-xs mt-1">API key terdeteksi. Konten akan dibuat menggunakan Claude AI secara real-time.</p>
+            <p className="font-semibold text-green-800 text-sm">Kimi K2 AI Terhubung ✅</p>
+            <p className="text-green-700 text-xs mt-1">API key terdeteksi. Konten akan dibuat menggunakan Kimi K2 AI secara real-time.</p>
           </div>
         </div>
       )}
